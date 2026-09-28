@@ -1,0 +1,76 @@
+#Requires AutoHotkey v2.0
+#SingleInstance Force
+
+; Latin key -> Hebrew char on the standard Windows Hebrew layout.
+EN_HE := Map(
+    "q","/", "w","'", "e","ק", "r","ר", "t","א", "y","ט", "u","ו", "i","ן", "o","ם", "p","פ",
+    "a","ש", "s","ד", "d","ג", "f","כ", "g","ע", "h","י", "j","ח", "k","ל", "l","ך", ";","ף", "'",",",
+    "z","ז", "x","ס", "c","ב", "v","ה", "b","נ", "n","מ", "m","צ", ",","ת", ".","ץ", "/",".", "``",";",
+    ; the Hebrew layout mirrors brackets; all other shifted keys (" : ? ! ...) are identical and pass through
+    "(",")", ")","(", "[","]", "]","[", "{","}", "}","{", "<",">", ">","<"
+)
+HE_EN := Map()
+for k, v in EN_HE
+    HE_EN[v] := k
+
+; Direction by majority: the sets overlap on . , / ' ; so per-char lookup is ambiguous.
+; Ties (incl. no letters at all, e.g. only punctuation) go Latin -> Hebrew.
+Convert(s) {
+    heb := 0, lat := 0
+    Loop Parse s {
+        c := Ord(A_LoopField)
+        if (c >= 0x5D0 && c <= 0x5EA)
+            heb++
+        else if ((c >= 65 && c <= 90) || (c >= 97 && c <= 122))
+            lat++
+    }
+    out := ""
+    Loop Parse s {
+        ch := A_LoopField
+        if (lat >= heb) {
+            lc := StrLower(ch)
+            out .= EN_HE.Has(lc) ? EN_HE[lc] : ch
+        } else
+            out .= HE_EN.Has(ch) ? HE_EN[ch] : ch
+    }
+    return out
+}
+
+if (A_Args.Length && A_Args[1] = "--test") {
+    cases := [["akuo", "שלום"], ["שלום", "akuo"], ["AKUO", "שלום"], ["t,", "את"], ["hk", "יל"],
+              ["123 !?", "123 !?"], ["akuo ש", "שלום ש"], ["שלום a", "akuo a"], ["את.", "t,/"],
+              ["akuo (a)", "שלום )ש("], ["שלום )ש(", "akuo (a)"], ["/", "."], ["a ש", "ש ש"]]
+    fails := 0
+    for c in cases
+        if ((got := Convert(c[1])) !== c[2]) {  ; !== : plain != is case-insensitive in AHK
+            FileAppend "FAIL " c[1] " -> " got " (want " c[2] ")`n", "*", "UTF-8"
+            fails++
+        }
+    FileAppend (fails ? fails " failed" : "all passed") "`n", "*", "UTF-8"
+    ExitApp fails ? 1 : 0
+}
+
+; Alt+Q. vk codes so the hotkey and Ctrl+C/V work while the Hebrew layout is active.
+!vk51:: {
+    ; wait for release, else the synthetic ^c arrives as Ctrl+Alt+C; give up after 1s if a key is stuck
+    if !(KeyWait("Ctrl", "T1") && KeyWait("Alt", "T1") && KeyWait("vk51", "T1"))
+        return
+    saved := ClipboardAll()
+    A_Clipboard := ""
+    Send "^{vk43}"      ; Ctrl+C
+    ClipWait 0.5
+    ; Nothing selected: IDEs copy the whole line (one line break, at the end), other apps copy nothing.
+    ; Either way, select the current line ourselves (without its line break) and copy that.
+    if (InStr(A_Clipboard, "`n") = StrLen(A_Clipboard)) {
+        A_Clipboard := ""
+        Send "{End}+{Home}^{vk43}"
+        if !ClipWait(0.5) { ; empty line / not copyable: leave everything as it was
+            A_Clipboard := saved
+            return
+        }
+    }
+    A_Clipboard := Convert(A_Clipboard)
+    Send "^{vk56}"      ; Ctrl+V
+    Sleep 500           ; ponytail: no OS signal for "paste consumed"; raise if an app ever pastes the old clipboard
+    A_Clipboard := saved
+}
