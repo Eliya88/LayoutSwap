@@ -78,28 +78,36 @@ GroupAdd "Terminals", "ahk_exe mintty.exe"                         ; Git Bash
 
 ; Alt+Q. vk codes so the hotkey and Ctrl+C/V work while the Hebrew layout is active.
 #HotIf !WinActive("ahk_group Terminals")
+; No waiting for Alt to be released: Send lifts held modifiers itself, so ^c doesn't become Ctrl+Alt+C.
 !vk51:: {
-    ; wait for release, else the synthetic ^c arrives as Ctrl+Alt+C; give up after 1s if a key is stuck
-    if !(KeyWait("Ctrl", "T1") && KeyWait("Alt", "T1") && KeyWait("vk51", "T1"))
-        return
-    saved := ClipboardAll()
+    global saved
+    if !saved           ; a restore from a quick previous press is still pending: keep that original
+        saved := ClipboardAll()
     A_Clipboard := ""
     Send "^{vk43}"      ; Ctrl+C
-    ClipWait 0.5
+    ClipWait 0.25       ; ponytail: raise if a slow app's real selection gets replaced by its whole line
     ; Nothing selected: IDEs copy the whole line (one line break, at the end), other apps copy nothing.
     ; Either way, select the current line ourselves (without its line break) and copy that.
     if (InStr(A_Clipboard, "`n") = StrLen(A_Clipboard)) {
         A_Clipboard := ""
         Send "{End}+{Home}^{vk43}"
         if !ClipWait(0.5) { ; empty line / not copyable: leave everything as it was
-            A_Clipboard := saved
+            SetTimer RestoreClipboard, 0
+            RestoreClipboard()
             return
         }
     }
     A_Clipboard := Convert(A_Clipboard, &toHeb)
     Send "^{vk56}"      ; Ctrl+V
     SwitchLayout(toHeb ? 0x0D : 0x09)  ; keep typing in the language just converted into
-    Sleep 500           ; ponytail: no OS signal for "paste consumed"; raise if an app ever pastes the old clipboard
-    A_Clipboard := saved
+    ; Restore in the background so the next Alt+Q isn't blocked. Re-arming restarts the 500 ms.
+    SetTimer RestoreClipboard, -500  ; ponytail: no OS signal for "paste consumed"; raise if an app ever pastes the old clipboard
 }
 #HotIf
+
+saved := 0
+RestoreClipboard() {
+    global saved
+    A_Clipboard := saved
+    saved := 0
+}
