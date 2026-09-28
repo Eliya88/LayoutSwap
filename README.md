@@ -8,16 +8,25 @@ Afterwards the keyboard switches to the language it converted into, so you can k
 
 Your clipboard is left as it was. The script saves it in every format first and restores it afterwards.
 
-## Requirements
-[AutoHotkey v2](https://www.autohotkey.com/):
+## Installation
+
+### 1. Get the files
+- **Easy way:** on the GitHub page, click the green **Code** button, then **Download ZIP**, then extract the ZIP to a folder.
+- **With git:** run `git clone https://github.com/Eliya88/LayoutSwap`.
+
+### 2. Install AutoHotkey v2
+The script is a text file that the AutoHotkey program reads and runs, a bit like how a `.py` file needs Python. Install it from [autohotkey.com](https://www.autohotkey.com/) or by running:
 ```
 winget install AutoHotkey.AutoHotkey
 ```
 
-## Run
-Double-click `LayoutSwap.ahk`. A green **H** icon appears in the system tray. To stop the script, right-click the icon and choose **Exit**.
+### 3. Run it
+Double-click `LayoutSwap.ahk`. The green **H** icon appears in the tray, and Alt+Q works from then on. To stop it, right-click the icon and choose **Exit**.
 
-**Start with Windows:** press Win+R, type `shell:startup`, and put a shortcut to `LayoutSwap.ahk` in the folder that opens.
+### 4. Optional: start with Windows
+Press Win+R, type `shell:startup`, and put a shortcut to `LayoutSwap.ahk` in the folder that opens.
+
+The Hebrew keyboard layout must be added in Windows for the automatic keyboard switch to work.
 
 ## Test
 ```
