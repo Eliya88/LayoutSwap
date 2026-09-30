@@ -91,9 +91,11 @@ GroupAdd "Terminals", "ahk_exe mintty.exe"                         ; Git Bash
     if (InStr(A_Clipboard, "`n") = StrLen(A_Clipboard)) {
         A_Clipboard := ""
         Send "{End}+{Home}^{vk43}"
-        if !ClipWait(0.5) { ; empty line / not copyable: leave everything as it was
+        if !ClipWait(0.5) { ; empty line / not copyable: leave the text alone, just flip the keyboard
             SetTimer RestoreClipboard, 0
             RestoreClipboard()
+            cur := DllCall("GetKeyboardLayout", "UInt", DllCall("GetWindowThreadProcessId", "Ptr", WinExist("A"), "Ptr", 0, "UInt"), "Ptr")
+            SwitchLayout((cur & 0x3FF) = 0x0D ? 0x09 : 0x0D)
             return
         }
     }

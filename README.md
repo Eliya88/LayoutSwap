@@ -2,7 +2,7 @@
 
 Fixes text typed in the wrong keyboard layout (English ⇄ Hebrew). Select the text and press **Alt+Q**. `akuo` becomes `שלום`, and pressing it again changes it back.
 
-If nothing is selected, it converts the **whole current line**, including any other text on it.
+If nothing is selected, it converts the **whole current line**, including any other text on it. On an empty line it just switches the keyboard to the other language.
 
 Afterwards the keyboard switches to the language it converted into, so you can keep typing right away. Alt+Q does nothing in terminal windows (cmd, PowerShell, Windows Terminal and Git Bash), because Ctrl+C there would stop the running program.
 
@@ -37,7 +37,7 @@ This prints `all passed` and exits with code 0.
 ## How it works
 1. Saves the clipboard, then sends Ctrl+C and waits up to 0.25 seconds for the text.
    - If nothing was copied, or an editor copied the whole line because nothing was selected, the script presses End and then Shift+Home to select the line itself, then copies again.
-   - If that is still empty (an empty line, or text that can't be copied), it restores the clipboard and does nothing.
+   - If that is still empty (an empty line, or text that can't be copied), it restores the clipboard and just switches the keyboard to the other language.
 2. Converts the text in whichever direction most of its letters point. Hebrew letters mean Hebrew→English; English letters or a tie mean English→Hebrew.
 3. Sends Ctrl+V, then switches the keyboard layout to the language of the converted text.
 4. Restores the original clipboard 500 ms later, in the background, so you can press Alt+Q again right away.
