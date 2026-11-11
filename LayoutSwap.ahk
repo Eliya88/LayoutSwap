@@ -28,7 +28,10 @@ Convert(s, &toHeb := 0) {
     out := ""
     Loop Parse s {
         ch := A_LoopField
-        if (toHeb) {
+        ; A dot next to a digit is a decimal point (2.5), never ץ / never Hebrew-layout "/".
+        if (ch = "." && (A_Index > 1 && SubStr(s, A_Index - 1, 1) ~= "\d" || SubStr(s, A_Index + 1, 1) ~= "\d"))
+            out .= ch
+        else if (toHeb) {
             lc := StrLower(ch)
             out .= EN_HE.Has(lc) ? EN_HE[lc] : ch
         } else
@@ -54,7 +57,8 @@ SwitchLayout(primaryLang) {
 if (A_Args.Length && A_Args[1] = "--test") {
     cases := [["akuo", "שלום"], ["שלום", "akuo"], ["AKUO", "שלום"], ["t,", "את"], ["hk", "יל"],
               ["123 !?", "123 !?"], ["akuo ש", "שלום ש"], ["שלום a", "akuo a"], ["את.", "t,/"],
-              ["akuo (a)", "שלום )ש("], ["שלום )ש(", "akuo (a)"], ["/", "."], ["a ש", "ש ש"]]
+              ["akuo (a)", "שלום )ש("], ["שלום )ש(", "akuo (a)"], ["/", "."], ["a ש", "ש ש"],
+              [",nahl tk 2.5", "תמשיך אל 2.5"], ["שלום 2.5", "akuo 2.5"], ["tk .5", "אל .5"], ["akuo.", "שלוםץ"], [".5", ".5"]]
     fails := 0
     for c in cases
         if ((got := Convert(c[1])) !== c[2]) {  ; !== : plain != is case-insensitive in AHK
